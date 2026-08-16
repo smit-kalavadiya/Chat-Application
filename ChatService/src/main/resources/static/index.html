@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring WebSocket Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<h2>Chat</h2>
+<input type="text" id="name" placeholder="Name">
+<input type="text" id="message" placeholder="Message">
+<button onclick="sendMessage()">Send</button>
+
+<ul id="messages"></ul>
+
+<script>
+    let stompClient = null;
+
+    function connect() {
+        const socket = new SockJS('/chat');  // matches your WebSocketConfig endpoint
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({
+            Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzbWl0OTk5QGdtYWlsLmNvbSIsImlhdCI6MTc3MzYxOTI5OCwiZXhwIjoxNzczNjIyODk4fQ.X-dB6tFNz0I75hGgS8oIbPFxtXlNC75CWmITy93kwFI"
+        }, function(frame) {
+            console.log('Connected: ' + frame);
+
+            // Subscribe to the correct broadcast topic
+            stompClient.subscribe('/topic/messages', function(msg) {
+                showMessage(JSON.parse(msg.body));
+            });
+        });
+    }
+
+    function sendMessage() {
+        const from = document.getElementById('name').value;
+        const content = document.getElementById('message').value;
+
+        // Send to the controller's @MessageMapping endpoint
+        stompClient.send("/app/send", {}, JSON.stringify({from, content}));
+    }
+
+    function showMessage(message) {
+        const ul = document.getElementById('messages');
+        const li = document.createElement('li');
+        li.appendChild(document.createTextNode(`${message.from}: ${message.content}`));
+        ul.appendChild(li);
+    }
+
+    connect();
+</script>
+</body>
+</html>
